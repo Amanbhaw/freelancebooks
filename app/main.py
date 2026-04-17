@@ -1,5 +1,5 @@
 """
-FreelanceBooks AI — AI Bookkeeping + Tax Prep for Freelancers
+BooksBird — AI Bookkeeping + Tax Prep for Freelancers
 Upload bank CSV → AI categorizes expenses → Tax estimate ready
 
 100% free to run. FastAPI + Supabase + Stripe.
@@ -18,7 +18,7 @@ from app.services.tax_calculator import calculate_tax
 from app.services.report_generator import generate_full_report
 
 app = FastAPI(
-    title="FreelanceBooks AI",
+    title="BooksBird",
     description="AI-powered bookkeeping + tax prep for freelancers",
     version="1.0.0",
 )
@@ -44,7 +44,7 @@ async def homepage(request: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "FreelanceBooks AI"}
+    return {"status": "ok", "service": "BooksBird"}
 
 
 @app.post("/api/analyze")
