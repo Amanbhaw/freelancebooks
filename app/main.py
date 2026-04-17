@@ -270,7 +270,7 @@ async def tax_savings(
 # PayChase AI Endpoints (merged)
 # ═══════════════════════════════════════════
 
-@app.get("/chase", response_class=HTMLResponse)
+@app.get("/invoices", response_class=HTMLResponse)
 async def chase_page(request: Request):
     """PayChase AI — Invoice Chaser dashboard."""
     return templates.TemplateResponse("chase.html", {"request": request})
