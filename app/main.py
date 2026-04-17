@@ -263,3 +263,57 @@ async def tax_savings(
     })
 
 
+
+
+# ═══════════════════════════════════════════
+# Invoice Chaser Tool (PayChase)
+# ═══════════════════════════════════════════
+from app.services.ai_reminder import generate_reminder, generate_sequence
+from app.services.payment_scorer import score_client, generate_cashflow_forecast
+from app.services.late_fee_calculator import calculate_late_fee
+
+
+@app.get("/invoices", response_class=HTMLResponse)
+async def invoices_page(request: Request):
+    return templates.TemplateResponse("invoices.html", {"request": request})
+
+
+@app.post("/api/reminder")
+async def reminder_api(request: Request):
+    data = await request.json()
+    if not data.get('invoice_no') or not data.get('amount'):
+        raise HTTPException(400, "invoice_no and amount required")
+    r = generate_reminder(data, sender_name=data.get('sender_name', ''))
+    return JSONResponse({"success": True, "reminder": r})
+
+
+@app.post("/api/sequence")
+async def sequence_api(request: Request):
+    data = await request.json()
+    if not data.get('invoice_no') or not data.get('amount'):
+        raise HTTPException(400, "invoice_no and amount required")
+    s = generate_sequence(data, sender_name=data.get('sender_name', ''))
+    return JSONResponse({"success": True, "sequence_count": len(s), "sequence": s})
+
+
+@app.post("/api/score-client")
+async def score_api(request: Request):
+    data = await request.json()
+    score = score_client(data.get('payment_history', []))
+    return JSONResponse({"success": True, "client_name": data.get('client_name', ''), "score": score})
+
+
+@app.post("/api/late-fee")
+async def latefee_api(request: Request):
+    data = await request.json()
+    if not data.get('amount') or not data.get('due_date'):
+        raise HTTPException(400, "amount and due_date required")
+    fee = calculate_late_fee(data['amount'], data['due_date'], rate_monthly=data.get('rate', 1.5))
+    return JSONResponse({"success": True, "late_fee": fee})
+
+
+@app.post("/api/forecast")
+async def forecast_api(request: Request):
+    data = await request.json()
+    forecast = generate_cashflow_forecast(data.get('invoices', []))
+    return JSONResponse({"success": True, "forecast": forecast})

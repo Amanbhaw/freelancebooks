@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayChase AI — Never Chase Payments Manually Again</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>PayChase AI</h1>
+    <p class="tagline">AI-powered invoice reminders. Get paid 60% faster. Never awkwardly chase clients again.</p>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <div class="tab active" onclick="showTab('reminder')">AI Reminder</div>
+        <div class="tab" onclick="showTab('sequence')">Full Sequence</div>
+        <div class="tab" onclick="showTab('score')">Client Score</div>
+        <div class="tab" onclick="showTab('latefee')">Late Fee</div>
+    </div>
+
+    <!-- Tab 1: Single Reminder -->
+    <div class="card tab-content active" id="tab-reminder">
+        <h2>Generate AI Reminder</h2>
+        <div class="row">
+            <div><label>Client Name</label><input id="r_client" placeholder="John Smith"></div>
+            <div><label>Client Email</label><input id="r_email" placeholder="john@example.com"></div>
+        </div>
+        <div class="row">
+            <div><label>Invoice #</label><input id="r_invoice" placeholder="1042"></div>
+            <div><label>Amount ($)</label><input type="number" id="r_amount" placeholder="5000"></div>
+            <div><label>Due Date</label><input type="date" id="r_due"></div>
+        </div>
+        <div class="row">
+            <div><label>Project Name (optional)</label><input id="r_project" placeholder="Website Redesign"></div>
+            <div><label>Your Name</label><input id="r_sender" placeholder="Your Name"></div>
+            <div><label>Payment Link (optional)</label><input id="r_paylink" placeholder="https://paypal.me/..."></div>
+        </div>
+        <button class="btn" onclick="generateReminder()" style="margin-top:15px">Generate AI Reminder</button>
+        <div class="loading" id="loadReminder"><div class="spinner"></div><p>AI writing personalized reminder...</p></div>
+        <div id="reminderResult"></div>
+    </div>
+
+    <!-- Tab 2: Full Sequence -->
+    <div class="card tab-content" id="tab-sequence">
+        <h2>Full Escalation Sequence (4 Emails)</h2>
+        <p style="color:#94a3b8;margin-bottom:15px">AI generates 4 emails: Friendly → Professional → Firm → Final Notice</p>
+        <div class="row">
+            <div><label>Client Name</label><input id="s_client" placeholder="Sarah Johnson"></div>
+            <div><label>Invoice #</label><input id="s_invoice" placeholder="1042"></div>
+            <div><label>Amount ($)</label><input type="number" id="s_amount" placeholder="5000"></div>
+        </div>
+        <div class="row">
+            <div><label>Due Date</label><input type="date" id="s_due"></div>
+            <div><label>Your Name</label><input id="s_sender" placeholder="Your Name"></div>
+            <div><label>Payment Link</label><input id="s_paylink" placeholder="https://paypal.me/..."></div>
+        </div>
+        <button class="btn" onclick="generateSequence()" style="margin-top:15px">Generate 4-Email Sequence</button>
+        <div class="loading" id="loadSequence"><div class="spinner"></div></div>
+        <div id="sequenceResult"></div>
+    </div>
+
+    <!-- Tab 3: Client Score -->
+    <div class="card tab-content" id="tab-score">
+        <h2>Client Payment Score (A-F)</h2>
+        <p style="color:#94a3b8;margin-bottom:15px">Enter past invoices to score client reliability</p>
+        <div class="row">
+            <div><label>Client Name</label><input id="sc_client" placeholder="ABC Corp"></div>
+        </div>
+        <div id="historyRows">
+            <div class="row" style="margin-top:10px">
+                <div><label>Invoice Amount</label><input type="number" class="hist_amount" placeholder="5000"></div>
+                <div><label>Due Date</label><input type="date" class="hist_due"></div>
+                <div><label>Paid Date (empty=unpaid)</label><input type="date" class="hist_paid"></div>
+            </div>
+        </div>
+        <button class="btn-secondary btn" onclick="addHistoryRow()" style="margin-top:10px;font-size:.85rem;padding:8px 16px">+ Add Invoice</button>
+        <button class="btn" onclick="scoreClient()" style="margin-top:10px">Score Client</button>
+        <div id="scoreResult"></div>
+    </div>
+
+    <!-- Tab 4: Late Fee -->
+    <div class="card tab-content" id="tab-latefee">
+        <h2>Late Fee Calculator</h2>
+        <div class="row">
+            <div><label>Invoice Amount ($)</label><input type="number" id="lf_amount" placeholder="5000"></div>
+            <div><label>Due Date</label><input type="date" id="lf_due"></div>
+            <div><label>Monthly Rate (%)</label><input type="number" id="lf_rate" value="1.5" step="0.1"></div>
+        </div>
+        <button class="btn" onclick="calcLateFee()" style="margin-top:15px">Calculate</button>
+        <div id="lateFeeResult"></div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="card" style="text-align:center;border:1px solid #f59e0b;margin-top:30px">
+        <h2>Simple Pricing</h2>
+        <div class="stats">
+            <div class="stat"><div class="value" style="font-size:1.3rem">Free</div><div class="label">3 invoices/mo<br>Single reminder<br>Late fee calc</div></div>
+            <div class="stat" style="border:2px solid #f59e0b"><div class="value" style="font-size:1.3rem">$9/mo</div><div class="label">Unlimited invoices<br>Full 4-email sequences<br>Client scoring A-F<br>Cash flow forecast<br>Priority support</div>
+                <a href="https://paypal.me/AmanBhawsar196/9" target="_blank" class="btn" style="margin-top:12px;font-size:.85rem">Upgrade Pro — $9/mo</a>
+            </div>
+        </div>
+        <p style="color:#64748b;margin-top:12px;font-size:.8rem">Cancel anytime. 7-day money-back guarantee.</p>
+    </div>
+
+    <!-- Why PayChase -->
+    <div class="card">
+        <h2>Why PayChase beats HoneyBook, FreshBooks & Wave</h2>
+        <table>
+            <thead><tr><th>Feature</th><th>PayChase</th><th>HoneyBook ($39)</th><th>FreshBooks ($29)</th></tr></thead>
+            <tbody>
+                <tr><td>AI Personalized Reminders</td><td style="color:#4ade80">4 tones</td><td>Generic</td><td>Generic</td></tr>
+                <tr><td>Full Escalation Sequence</td><td style="color:#4ade80">Auto 4-step</td><td>Basic</td><td>Basic</td></tr>
+                <tr><td>Client Payment Score (A-F)</td><td style="color:#4ade80">AI-powered</td><td>No</td><td>No</td></tr>
+                <tr><td>Payment Prediction</td><td style="color:#4ade80">Per client</td><td>No</td><td>No</td></tr>
+                <tr><td>Cash Flow Forecast</td><td style="color:#4ade80">30/60/90 days</td><td>Basic</td><td>Basic</td></tr>
+                <tr><td>Late Fee Calculator</td><td style="color:#4ade80">Built-in</td><td>No</td><td>Basic</td></tr>
+                <tr><td>Price</td><td style="color:#4ade80;font-weight:700">$9/mo</td><td>$39/mo</td><td>$29/mo</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<footer><p>Built by <a href="https://github.com/Amanbhaw">Aman Bhawsar</a> | Not legal advice</p></footer>
+
+<script>
+function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+async function generateReminder() {
+    document.getElementById('loadReminder').classList.add('show');
+    const data = {
+        client_name: document.getElementById('r_client').value,
+        client_email: document.getElementById('r_email').value,
+        invoice_no: document.getElementById('r_invoice').value,
+        amount: parseFloat(document.getElementById('r_amount').value) || 0,
+        due_date: document.getElementById('r_due').value,
+        project_name: document.getElementById('r_project').value,
+        sender_name: document.getElementById('r_sender').value,
+        payment_link: document.getElementById('r_paylink').value,
+    };
+    try {
+        const r = await fetch('/api/reminder', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        const d = await r.json();
+        const rm = d.reminder;
+        document.getElementById('reminderResult').innerHTML = `
+            <div class="email-preview" style="margin-top:15px">
+                <div class="subject">Subject: ${rm.subject}</div>
+                <div>Tone: <span class="badge badge-${rm.tone === 'friendly' ? 'a' : rm.tone === 'professional' ? 'b' : rm.tone === 'firm' ? 'c' : 'd'}">${rm.tone}</span> | Day ${rm.days_overdue} overdue</div>
+                <hr style="border-color:#2a2a4a;margin:10px 0">
+                ${rm.body.replace(/\n/g, '<br>')}
+            </div>
+            <button class="btn-secondary btn" style="margin-top:10px;font-size:.85rem" onclick="navigator.clipboard.writeText(\`${rm.body.replace(/`/g,"'")}\`);this.textContent='Copied!'">Copy Email</button>`;
+    } catch(e) { alert('Error: ' + e.message); }
+    document.getElementById('loadReminder').classList.remove('show');
+}
+
+async function generateSequence() {
+    document.getElementById('loadSequence').classList.add('show');
+    const data = {
+        client_name: document.getElementById('s_client').value,
+        invoice_no: document.getElementById('s_invoice').value,
+        amount: parseFloat(document.getElementById('s_amount').value) || 0,
+        due_date: document.getElementById('s_due').value,
+        sender_name: document.getElementById('s_sender').value,
+        payment_link: document.getElementById('s_paylink').value,
+    };
+    try {
+        const r = await fetch('/api/sequence', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        const d = await r.json();
+        let html = `<p style="margin:15px 0;color:#4ade80">✅ ${d.sequence_count} emails generated!</p>`;
+        d.sequence.forEach(s => {
+            html += `<div class="sequence-item">
+                <h3>${s.label}</h3>
+                <div class="email-preview" style="margin-top:8px;font-size:.85rem">
+                    <div class="subject">Subject: ${s.subject}</div>
+                    <hr style="border-color:#2a2a4a;margin:8px 0">
+                    ${s.body.replace(/\n/g,'<br>')}
+                </div>
+            </div>`;
+        });
+        document.getElementById('sequenceResult').innerHTML = html;
+    } catch(e) { alert('Error: ' + e.message); }
+    document.getElementById('loadSequence').classList.remove('show');
+}
+
+function addHistoryRow() {
+    document.getElementById('historyRows').insertAdjacentHTML('beforeend', `
+        <div class="row" style="margin-top:8px">
+            <div><input type="number" class="hist_amount" placeholder="Amount"></div>
+            <div><input type="date" class="hist_due"></div>
+            <div><input type="date" class="hist_paid"></div>
+        </div>`);
+}
+
+async function scoreClient() {
+    const amounts = document.querySelectorAll('.hist_amount');
+    const dues = document.querySelectorAll('.hist_due');
+    const paids = document.querySelectorAll('.hist_paid');
+    const history = [];
+    for (let i = 0; i < amounts.length; i++) {
+        if (amounts[i].value && dues[i].value) {
+            history.push({
+                invoice_no: `INV-${i+1}`,
+                amount: parseFloat(amounts[i].value),
+                due_date: dues[i].value,
+                paid_date: paids[i].value || null,
+                status: paids[i].value ? 'paid' : 'unpaid',
+            });
+        }
+    }
+    try {
+        const r = await fetch('/api/score-client', {method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({client_name: document.getElementById('sc_client').value, payment_history: history})});
+        const d = await r.json();
+        const s = d.score;
+        const colors = {A:'badge-a',B:'badge-b',C:'badge-c',D:'badge-d',F:'badge-f',N:'badge-b'};
+        document.getElementById('scoreResult').innerHTML = `
+            <div class="score-big" style="color:${s.score==='A'?'#4ade80':s.score==='B'?'#60a5fa':s.score==='C'?'#fbbf24':s.score==='D'?'#fca5a5':'#ef4444'}">${s.score}</div>
+            <div style="text-align:center"><span class="badge ${colors[s.score]||'badge-b'}" style="font-size:1rem;padding:6px 16px">${s.label}</span></div>
+            <div class="stats" style="margin-top:15px">
+                <div class="stat"><div class="value">${s.on_time_rate}%</div><div class="label">On-Time Rate</div></div>
+                <div class="stat"><div class="value">${s.avg_days_late}</div><div class="label">Avg Days Late</div></div>
+                <div class="stat red"><div class="value">$${(s.total_outstanding||0).toLocaleString()}</div><div class="label">Outstanding</div></div>
+            </div>
+            <div class="email-preview" style="margin-top:15px"><strong>Recommendation:</strong><br>${s.recommendation}</div>`;
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function calcLateFee() {
+    const data = {
+        amount: parseFloat(document.getElementById('lf_amount').value),
+        due_date: document.getElementById('lf_due').value,
+        rate: parseFloat(document.getElementById('lf_rate').value),
+    };
+    try {
+        const r = await fetch('/api/late-fee', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        const d = await r.json();
+        const f = d.late_fee;
+        document.getElementById('lateFeeResult').innerHTML = `
+            <div class="stats" style="margin-top:15px">
+                <div class="stat"><div class="value">${f.days_late}</div><div class="label">Days Late</div></div>
+                <div class="stat red"><div class="value">$${f.late_fee.toLocaleString()}</div><div class="label">Late Fee</div></div>
+                <div class="stat" style="border:2px solid #ef4444"><div class="value" style="color:#ef4444">$${f.total_due.toLocaleString()}</div><div class="label">Total Now Due</div></div>
+            </div>
+            <div class="email-preview" style="margin-top:10px">Status: <span class="badge badge-${f.urgency==='low'?'a':f.urgency==='medium'?'c':'d'}">${f.status.replace(/_/g,' ').toUpperCase()}</span></div>`;
+    } catch(e) { alert('Error: ' + e.message); }
+}
+</script>
+</body>
+</html>
