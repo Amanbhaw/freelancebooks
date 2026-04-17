@@ -13,7 +13,7 @@ def generate_text_report(summary, tax_info, transactions):
     """Generate human-readable text report."""
     lines = []
     lines.append("=" * 60)
-    lines.append("  FreelanceBooks AI — Financial Report")
+    lines.append("  BooksBird — Financial Report")
     lines.append(f"  Generated: {datetime.now().strftime('%B %d, %Y')}")
     lines.append(f"  Tax Country: {summary.get('tax_country', 'US')}")
     lines.append("=" * 60)
