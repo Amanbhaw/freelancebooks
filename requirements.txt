@@ -9,3 +9,4 @@ stripe==12.1.0
 pandas==2.2.3
 python-dotenv==1.0.1
 httpx==0.28.1
+# v1.3 — Invoice + P&L + Tax Tips
