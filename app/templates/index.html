@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreelanceBooks AI — AI Bookkeeping for Freelancers</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>FreelanceBooks AI</h1>
+    <p class="tagline">Upload your bank CSV. AI categorizes expenses. Tax estimate in seconds.</p>
+
+    <!-- Upload Section -->
+    <div class="card">
+        <h2>Upload Bank Statement</h2>
+        <form id="uploadForm">
+            <div class="upload-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+                <p style="font-size:2rem;margin-bottom:10px">📂</p>
+                <p><strong>Click to upload</strong> or drag & drop CSV file</p>
+                <p style="color:#64748b;font-size:0.85rem;margin-top:8px">Supports: Any bank CSV (Chase, Wells Fargo, Barclays, HDFC, SBI...)</p>
+                <input type="file" id="csvFile" accept=".csv" onchange="fileSelected(this)">
+            </div>
+            <p id="fileName" style="margin-top:10px;color:#38bdf8;display:none"></p>
+            <div class="row" style="margin-top:15px">
+                <div>
+                    <label>Tax Country</label>
+                    <select id="country">
+                        <option value="US">United States (1099 / Schedule C)</option>
+                        <option value="UK">United Kingdom (Self Assessment)</option>
+                    </select>
+                </div>
+                <div style="flex:0">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn" id="analyzeBtn" disabled>Analyze</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Tax Calculator -->
+    <div class="card">
+        <h2>Quick Tax Calculator</h2>
+        <form id="taxForm">
+            <div class="row">
+                <div>
+                    <label>Annual Income ($)</label>
+                    <input type="number" id="taxIncome" placeholder="e.g. 80000">
+                </div>
+                <div>
+                    <label>Annual Expenses ($)</label>
+                    <input type="number" id="taxExpenses" placeholder="e.g. 15000" value="0">
+                </div>
+                <div>
+                    <label>Country</label>
+                    <select id="taxCountry">
+                        <option value="US">US</option>
+                        <option value="UK">UK</option>
+                    </select>
+                </div>
+                <div style="flex:0">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn">Calculate</button>
+                </div>
+            </div>
+        </form>
+        <div id="quickTaxResult"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>AI is analyzing your transactions...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+        <div class="card">
+            <h2>Financial Overview</h2>
+            <div class="stats" id="overviewStats"></div>
+        </div>
+
+        <div class="tax-box" id="taxBox"></div>
+
+        <div class="card">
+            <h2>Category Breakdown</h2>
+            <div id="categoryBreakdown"></div>
+        </div>
+
+        <div class="card">
+            <h2>Transactions (<span id="txnCount">0</span>)</h2>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Category</th>
+                            <th>Deductible</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txnTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="text-align:center">
+            <button class="btn" onclick="downloadCSV()">Download Categorized CSV</button>
+            <button class="btn" onclick="downloadReport()" style="margin-left:10px;background:linear-gradient(135deg,#4ade80,#22c55e)">Download Tax Report</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>Built by <a href="https://github.com/Amanbhaw">Aman Bhawsar</a></p>
+    <p style="margin-top:5px">Not financial advice. Consult a tax professional.</p>
+</footer>
+
+<script>
+let lastReport = null;
+let lastFile = null;
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.endsWith('.csv')) { document.getElementById('csvFile').files = e.dataTransfer.files; fileSelected(document.getElementById('csvFile')); }
+});
+
+function fileSelected(input) {
+    if (input.files.length) {
+        lastFile = input.files[0];
+        document.getElementById('fileName').style.display = 'block';
+        document.getElementById('fileName').textContent = '📄 ' + lastFile.name + ' (' + (lastFile.size/1024).toFixed(1) + ' KB)';
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+}
+
+// Upload & analyze
+document.getElementById('uploadForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!lastFile) return;
+
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = true;
+
+    const fd = new FormData();
+    fd.append('file', lastFile);
+    fd.append('country', document.getElementById('country').value);
+
+    try {
+        const r = await fetch('/api/analyze', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'Analysis failed');
+        lastReport = data;
+        renderResults(data);
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        document.getElementById('loading').classList.remove('show');
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+});
+
+function renderResults(data) {
+    document.getElementById('results').style.display = 'block';
+    const s = data.summary;
+    const t = data.tax_estimate;
+
+    // Overview stats
+    document.getElementById('overviewStats').innerHTML = `
+        <div class="stat green"><div class="value">$${s.total_income.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">Total Income</div></div>
+        <div class="stat red"><div class="value">$${s.total_expenses.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">Total Expenses</div></div>
+        <div class="stat"><div class="value">$${s.net_profit.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">Net Profit</div></div>
+        <div class="stat yellow"><div class="value">$${s.total_deductible.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">Tax Deductible</div></div>
+    `;
+
+    // Tax box
+    const isUK = t.country === 'UK';
+    document.getElementById('taxBox').innerHTML = `
+        <h3>${isUK ? '🇬🇧' : '🇺🇸'} Estimated Tax — ${t.country}</h3>
+        <div class="stats">
+            <div class="stat red"><div class="value">${isUK?'£':'$'}${t.total_tax.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">Total Tax</div></div>
+            <div class="stat yellow"><div class="value">${t.effective_rate}%</div><div class="label">Effective Rate</div></div>
+            <div class="stat"><div class="value">${isUK?'£':'$'}${(isUK ? t.quarterly_payment_on_account : t.quarterly_estimate).toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">${isUK ? 'Payment on Account' : 'Quarterly Payment'}</div></div>
+        </div>
+        <p style="color:#94a3b8;font-size:0.8rem;margin-top:10px">${t.disclaimer}</p>
+    `;
+
+    // Category breakdown
+    let catHTML = '<div class="stats">';
+    Object.entries(s.category_breakdown).sort((a,b) => b[1].total - a[1].total).forEach(([cat, info]) => {
+        if (info.total > 0) {
+            const pct = s.total_expenses > 0 ? (info.total / (s.total_income + s.total_expenses) * 100).toFixed(1) : 0;
+            catHTML += `<div class="stat"><div class="value" style="font-size:1.2rem">$${info.total.toLocaleString(undefined,{minimumFractionDigits:0})}</div><div class="label">${cat.replace(/_/g,' ')} (${info.count})</div><div class="progress"><div class="progress-bar" style="width:${Math.min(pct*3,100)}%"></div></div></div>`;
+        }
+    });
+    catHTML += '</div>';
+    document.getElementById('categoryBreakdown').innerHTML = catHTML;
+
+    // Transactions table
+    document.getElementById('txnCount').textContent = data.transactions.length;
+    let rows = '';
+    data.transactions.forEach(txn => {
+        const badge = txn.deductible ? '<span class="badge deductible">Deductible</span>' :
+                      txn.category === 'income' ? '<span class="badge income">Income</span>' :
+                      '<span class="badge personal">Personal</span>';
+        const amtClass = txn.amount >= 0 ? 'color:#4ade80' : 'color:#f87171';
+        rows += `<tr>
+            <td>${txn.date}</td>
+            <td>${txn.description.substring(0,50)}</td>
+            <td style="${amtClass};font-weight:600">$${txn.amount.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+            <td>${txn.category.replace(/_/g,' ')}</td>
+            <td>${badge}</td>
+        </tr>`;
+    });
+    document.getElementById('txnTable').innerHTML = rows;
+
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Quick tax calculator
+document.getElementById('taxForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const income = parseFloat(document.getElementById('taxIncome').value) || 0;
+    const expenses = parseFloat(document.getElementById('taxExpenses').value) || 0;
+    const country = document.getElementById('taxCountry').value;
+
+    const fd = new FormData();
+    fd.append('income', income);
+    fd.append('expenses', expenses);
+    fd.append('country', country);
+
+    const r = await fetch('/api/tax-estimate', { method: 'POST', body: fd });
+    const data = await r.json();
+    const t = data.tax_estimate;
+    const isUK = t.country === 'UK';
+
+    document.getElementById('quickTaxResult').innerHTML = `
+        <div class="stats" style="margin-top:15px">
+            <div class="stat"><div class="value">${isUK?'£':'$'}${(income-expenses).toLocaleString()}</div><div class="label">Net Profit</div></div>
+            <div class="stat red"><div class="value">${isUK?'£':'$'}${t.total_tax.toLocaleString()}</div><div class="label">Total Tax</div></div>
+            <div class="stat yellow"><div class="value">${t.effective_rate}%</div><div class="label">Rate</div></div>
+            <div class="stat"><div class="value">${isUK?'£':'$'}${(isUK ? t.quarterly_payment_on_account : t.quarterly_estimate).toLocaleString()}</div><div class="label">${isUK?'Payment on Account':'Quarterly'}</div></div>
+        </div>
+    `;
+});
+
+// Downloads
+function downloadCSV() {
+    if (!lastReport) return;
+    // Re-fetch CSV
+    const fd = new FormData();
+    fd.append('file', lastFile);
+    fd.append('country', document.getElementById('country').value);
+    fetch('/api/report/csv', { method: 'POST', body: fd })
+        .then(r => r.text())
+        .then(csv => {
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'freelancebooks_export.csv'; a.click();
+        });
+}
+
+function downloadReport() {
+    if (!lastReport) return;
+    const fd = new FormData();
+    fd.append('file', lastFile);
+    fd.append('country', document.getElementById('country').value);
+    fetch('/api/report/text', { method: 'POST', body: fd })
+        .then(r => r.text())
+        .then(text => {
+            const blob = new Blob([text], {type:'text/plain'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'freelancebooks_tax_report.txt'; a.click();
+        });
+}
+</script>
+</body>
+</html>
