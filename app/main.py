@@ -18,9 +18,6 @@ from app.services.tax_calculator import calculate_tax
 from app.services.report_generator import generate_full_report
 from app.services.invoice_generator import create_invoice
 from app.services.pnl_generator import generate_pnl
-from app.services.ai_reminder import generate_reminder, generate_sequence
-from app.services.payment_scorer import score_client, generate_cashflow_forecast
-from app.services.late_fee_calculator import calculate_late_fee
 
 app = FastAPI(
     title="BooksBird",
@@ -266,56 +263,3 @@ async def tax_savings(
     })
 
 
-# ═══════════════════════════════════════════
-# PayChase AI Endpoints (merged)
-# ═══════════════════════════════════════════
-
-@app.get("/invoices", response_class=HTMLResponse)
-async def chase_page(request: Request):
-    """PayChase AI — Invoice Chaser dashboard."""
-    return templates.TemplateResponse("chase.html", {"request": request})
-
-
-@app.post("/api/reminder")
-async def create_reminder_api(request: Request):
-    data = await request.json()
-    if not data.get('invoice_no') or not data.get('amount'):
-        raise HTTPException(400, "invoice_no and amount required")
-    reminder = generate_reminder(data, sender_name=data.get('sender_name', ''))
-    return JSONResponse({"success": True, "reminder": reminder})
-
-
-@app.post("/api/sequence")
-async def create_sequence_api(request: Request):
-    data = await request.json()
-    if not data.get('invoice_no') or not data.get('amount'):
-        raise HTTPException(400, "invoice_no and amount required")
-    sequence = generate_sequence(data, sender_name=data.get('sender_name', ''))
-    return JSONResponse({"success": True, "sequence_count": len(sequence), "sequence": sequence})
-
-
-@app.post("/api/score-client")
-async def client_score_api(request: Request):
-    data = await request.json()
-    history = data.get('payment_history', [])
-    score = score_client(history)
-    return JSONResponse({"success": True, "client_name": data.get('client_name', ''), "score": score})
-
-
-@app.post("/api/late-fee")
-async def late_fee_api(request: Request):
-    data = await request.json()
-    if not data.get('amount') or not data.get('due_date'):
-        raise HTTPException(400, "amount and due_date required")
-    fee = calculate_late_fee(data['amount'], data['due_date'], rate_monthly=data.get('rate', 1.5))
-    return JSONResponse({"success": True, "late_fee": fee})
-
-
-@app.post("/api/forecast")
-async def forecast_api(request: Request):
-    data = await request.json()
-    invoices = data.get('invoices', [])
-    if not invoices:
-        raise HTTPException(400, "invoices list required")
-    forecast = generate_cashflow_forecast(invoices)
-    return JSONResponse({"success": True, "forecast": forecast})
